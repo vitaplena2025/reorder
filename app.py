@@ -35,25 +35,25 @@ st.write("Esta aplicación determina cuándo y cuánto pedir de cada SKU según 
 # Ejemplo visual del CSV
 st.subheader("📊 Ejemplo de archivo CSV a subir")
 example_df = pd.DataFrame({
-    'Producto': ['4387', '4417'],
-    'Inventario_actual_cajas': [892, 1174],
-    'Ventas_totales_ultimos_meses': [2189, 1810],
-    'Periodo_dias': [210, 210],
-    'Lead_time_dias': [60, 60],
-    'Factor_seguridad': [1.3, 1.3],
-    'Minimo_paletas': [10, 10]
+    'SKU or Item Code': ['4387', '4417'],
+    'Inventario hoy': [892, 1174],
+    'Ventas (en cajas)': [2189, 1810],
+    'Periodo de las ventas (en días)': [210, 210],
+    'Lead Time(días)': [60, 60],
+    'Safety Stock': [1.3, 1.3],
+    'Mínimo Paleta': [10, 10]
 })
 st.table(example_df)
 
 st.write(
-    "**Columnas del CSV:**\n"
-    "- Producto: Código o SKU.\n"
-    "- Inventario_actual_cajas: Stock actual en cajas.\n"
-    "- Ventas_totales_ultimos_meses: Ventas en el periodo.\n"
-    "- Periodo_dias: Días del histórico (ej. 210).\n"
-    "- Lead_time_dias: Tiempo de reposición en días.\n"
-    "- Factor_seguridad: Coeficiente >1 para buffer (ej. 1.3).\n"
-    "- Minimo_paletas: Paletas mínimas totales (1 paleta=225 cajas)."
+    "**Columnas del CSV:**
+    - SKU or Item Code: Código o identificador del artículo.
+    - Inventario hoy: Stock actual en cajas.
+    - Ventas (en cajas): Total de ventas en el periodo.
+    - Periodo de las ventas (en días): Duración del histórico de ventas.
+    - Lead Time(días): Tiempo de reposición en días.
+    - Safety Stock: Coeficiente >1 para margen de seguridad.
+    - Mínimo Paleta: Paletas mínimas totales (1 paleta=225 cajas)."
 )
 
 st.markdown("---")
@@ -75,6 +75,17 @@ uploaded_file = st.file_uploader("Selecciona tu CSV", type="csv")
 
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
+    # Renombrar columnas a internos para cálculo
+    rename_map = {
+        'SKU or Item Code': 'Producto',
+        'Inventario hoy': 'Inventario_actual_cajas',
+        'Ventas (en cajas)': 'Ventas_totales_ultimos_meses',
+        'Periodo de las ventas (en días)': 'Periodo_dias',
+        'Lead Time(días)': 'Lead_time_dias',
+        'Safety Stock': 'Factor_seguridad',
+        'Mínimo Paleta': 'Minimo_paletas'
+    }
+    df.rename(columns=rename_map, inplace=True)
     # Validación de datos numéricos
     for col in [
         'Inventario_actual_cajas',
@@ -127,14 +138,14 @@ if uploaded_file:
         # Explicación del cálculo
         st.markdown("---")
         st.write(
-            "**Cómo se calcula:**\n"
-            "1. ventasDiarias = Ventas_totales_ultimos_meses / Periodo_dias.\n"
-            "2. puntoReposicion = ventasDiarias × Lead_time_dias × Factor_seguridad.\n"
-            "3. reordenar = Inventario_actual_cajas ≤ puntoReposicion.\n"
-            "4. urgencia = 1.3 si stock termina antes del Lead_time, sino 1.0.\n"
-            "5. peso = ventasDiarias × urgencia.\n"
-            "6. paletas = (peso / suma de pesos) × min_paletas (redondeo).\n"
-            "7. cajasOrdenar = paletas × 225."
+            "**Cómo se calcula:**
+            1. ventasDiarias = Ventas_totales_ultimos_meses / Periodo_dias.
+            2. puntoReposicion = ventasDiarias × Lead_time_dias × Factor_seguridad.
+            3. reordenar = Inventario_actual_cajas ≤ puntoReposicion.
+            4. urgencia = 1.3 si stock termina antes del Lead_time, sino 1.0.
+            5. peso = ventasDiarias × urgencia.
+            6. paletas = (peso / suma de pesos) × min_paletas (redondeo).
+            7. cajasOrdenar = paletas × 225."
         )
 
         # Botón para descargar
