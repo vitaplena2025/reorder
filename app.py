@@ -52,7 +52,7 @@ st.write(
     "- Ventas_totales_ultimos_meses: Ventas en el periodo.\n"
     "- Periodo_dias: Días del histórico (ej. 210).\n"
     "- Lead_time_dias: Tiempo de reposición en días.\n"
-    "- Factor_seguridad: Coeficiente >1 para buffer (ej.1.3).\n"
+    "- Factor_seguridad: Coeficiente >1 para buffer (ej. 1.3).\n"
     "- Minimo_paletas: Paletas mínimas totales (1 paleta=225 cajas)."
 )
 
@@ -69,6 +69,7 @@ with st.sidebar:
     )
     st.write("La asignación se reparte según mix de ventas y urgencia.")
 
+# Paso 1: subir archivo
 st.header("1️⃣ Sube tu archivo CSV")
 uploaded_file = st.file_uploader("Selecciona tu CSV", type="csv")
 
@@ -76,8 +77,11 @@ if uploaded_file:
     df = pd.read_csv(uploaded_file)
     # Validación de datos numéricos
     for col in [
-        'Inventario_actual_cajas', 'Ventas_totales_ultimos_meses',
-        'Periodo_dias', 'Lead_time_dias', 'Factor_seguridad'
+        'Inventario_actual_cajas',
+        'Ventas_totales_ultimos_meses',
+        'Periodo_dias',
+        'Lead_time_dias',
+        'Factor_seguridad'
     ]:
         df[col] = pd.to_numeric(df[col], errors='coerce')
     if 'Minimo_paletas' in df.columns:
@@ -86,15 +90,24 @@ if uploaded_file:
     st.success("✔️ Datos cargados")
     st.dataframe(df, height=200)
 
+    # Paso 2: calcular reorden
     if st.button("2️⃣ Calcular Reorden"):
-        # Cálculos principales
         df['ventasDiarias'] = df['Ventas_totales_ultimos_meses'] / df['Periodo_dias']
-        df['puntoReposicion'] = (df['ventasDiarias'] * df['Lead_time_dias'] * df['Factor_seguridad']).round(0)
+        df['puntoReposicion'] = (
+            df['ventasDiarias'] *
+            df['Lead_time_dias'] *
+            df['Factor_seguridad']
+        ).round(0)
         df['reordenar'] = df['Inventario_actual_cajas'] <= df['puntoReposicion']
 
         # Urgencia y peso
-        df['diasHasta'] = (df['Inventario_actual_cajas'] - df['puntoReposicion']) / df['ventasDiarias']
-        df['urgencia'] = df.apply(lambda r: 1.3 if r['diasHasta'] <= r['Lead_time_dias'] else 1.0, axis=1)
+        df['diasHasta'] = (
+            df['Inventario_actual_cajas'] - df['puntoReposicion']
+        ) / df['ventasDiarias']
+        df['urgencia'] = df.apply(
+            lambda r: 1.3 if r['diasHasta'] <= r['Lead_time_dias'] else 1.0,
+            axis=1
+        )
         df['peso'] = df['ventasDiarias'] * df['urgencia']
 
         # Asignación de paletas
@@ -107,7 +120,7 @@ if uploaded_file:
 
         df['cajasOrdenar'] = df['paletas'] * 225
 
-        # Resultados
+        # Mostrar resultados
         st.subheader("📈 Resultados de Reorden")
         st.dataframe(df, height=300)
 
@@ -115,21 +128,20 @@ if uploaded_file:
         st.markdown("---")
         st.write(
             "**Cómo se calcula:**\n"
-            "1. ventasDiarias = Ventas_totales / Periodo_dias.\n"
+            "1. ventasDiarias = Ventas_totales_ultimos_meses / Periodo_dias.\n"
             "2. puntoReposicion = ventasDiarias × Lead_time_dias × Factor_seguridad.\n"
             "3. reordenar = Inventario_actual_cajas ≤ puntoReposicion.\n"
             "4. urgencia = 1.3 si stock termina antes del Lead_time, sino 1.0.\n"
             "5. peso = ventasDiarias × urgencia.\n"
-            "6. paletas = (peso / suma pesos) × minimo_paletas (redondeo).\n"
+            "6. paletas = (peso / suma de pesos) × min_paletas (redondeo).\n"
             "7. cajasOrdenar = paletas × 225."
         )
 
-        # Descarga de CSV
-        csv = df.to_csv(index=False).encode('utf-8')
+        # Botón para descargar
+        csv = df.to_csv(index=False).encode("utf-8")
         st.download_button(
-            label='📥 Descargar CSV Sugerido',
+            label="📥 Descargar CSV Sugerido",
             data=csv,
-            file_name='reorder_sugerido.csv',
-            mime='text/csv'
+            file_name="reorder_sugerido.csv",
+            mime="text/csv"
         )
-```
