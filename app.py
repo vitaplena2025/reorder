@@ -45,15 +45,17 @@ example_df = pd.DataFrame({
 })
 st.table(example_df)
 
-st.write(
-    "**Columnas del CSV:**
-    - SKU or Item Code: Código o identificador del artículo.
-    - Inventario hoy: Stock actual en cajas.
-    - Ventas (en cajas): Total de ventas en el periodo.
-    - Periodo de las ventas (en días): Duración del histórico de ventas.
-    - Lead Time(días): Tiempo de reposición en días.
-    - Safety Stock: Coeficiente >1 para margen de seguridad.
-    - Mínimo Paleta: Paletas mínimas totales (1 paleta=225 cajas)."
+st.markdown(
+    """
+**Columnas del CSV:**
+- **SKU or Item Code**: Código o identificador del artículo.
+- **Inventario hoy**: Stock actual en cajas.
+- **Ventas (en cajas)**: Total de ventas en el periodo.
+- **Periodo de las ventas (en días)**: Duración del histórico de ventas.
+- **Lead Time(días)**: Tiempo de reposición en días.
+- **Safety Stock**: Coeficiente >1 para margen de seguridad.
+- **Mínimo Paleta**: Paletas mínimas totales (1 paleta = 225 cajas).
+    """
 )
 
 st.markdown("---")
@@ -105,9 +107,7 @@ if uploaded_file:
     if st.button("2️⃣ Calcular Reorden"):
         df['ventasDiarias'] = df['Ventas_totales_ultimos_meses'] / df['Periodo_dias']
         df['puntoReposicion'] = (
-            df['ventasDiarias'] *
-            df['Lead_time_dias'] *
-            df['Factor_seguridad']
+            df['ventasDiarias'] * df['Lead_time_dias'] * df['Factor_seguridad']
         ).round(0)
         df['reordenar'] = df['Inventario_actual_cajas'] <= df['puntoReposicion']
 
@@ -138,14 +138,14 @@ if uploaded_file:
         # Explicación del cálculo
         st.markdown("---")
         st.write(
-            "**Cómo se calcula:**
-            1. ventasDiarias = Ventas_totales_ultimos_meses / Periodo_dias.
-            2. puntoReposicion = ventasDiarias × Lead_time_dias × Factor_seguridad.
-            3. reordenar = Inventario_actual_cajas ≤ puntoReposicion.
-            4. urgencia = 1.3 si stock termina antes del Lead_time, sino 1.0.
-            5. peso = ventasDiarias × urgencia.
-            6. paletas = (peso / suma de pesos) × min_paletas (redondeo).
-            7. cajasOrdenar = paletas × 225."
+            "**Cómo se calcula:**  "
+            "ventasDiarias = Ventas_totales_ultimos_meses / Periodo_dias.  "
+            "puntoReposicion = ventasDiarias × Lead_time_dias × Factor_seguridad.  "
+            "reordenar = Inventario_actual_cajas ≤ puntoReposicion.  "
+            "urgencia = 1.3 si stock termina antes del Lead_time, sino 1.0.  "
+            "peso = ventasDiarias × urgencia.  "
+            "paletas = (peso / suma de pesos) × min_paletas (redondeo).  "
+            "cajasOrdenar = paletas × 225."
         )
 
         # Botón para descargar
