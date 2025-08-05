@@ -60,70 +60,17 @@ st.write(
 
 st.markdown("---")
 
+# Botón destacado para descargar plantilla de Excel antes de comenzar
+st.markdown("### 📥 **Descarga aquí tu plantilla de Excel antes de cargar datos**")
+with open('template.xlsx', 'rb') as f:
+    data = f.read()
+st.download_button(
+    label='Descargar plantilla de Excel (template.xlsx)',
+    data=data,
+    file_name='plantilla_reorder.xlsx',
+    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+)
+
 # Paso 1: subir archivo
 st.header("1️⃣ Sube tu archivo CSV")
 uploaded_file = st.file_uploader("Selecciona tu CSV", type="csv")
-
-if uploaded_file:
-    df = pd.read_csv(uploaded_file)
-    # Renombrar columnas internas
-    rename_map = {
-        'SKU or Item Code': 'Producto',
-        'Inventario hoy': 'Inventario_actual_cajas',
-        'Ventas (en cajas)': 'Ventas_totales_ultimos_meses',
-        'Periodo de las ventas (en días)': 'Periodo_dias',
-        'Lead Time(días)': 'Lead_time_dias',
-        'Safety Stock': 'Factor_seguridad',
-        'Tamaño Paleta': 'Pallet_size'
-    }
-    df.rename(columns=rename_map, inplace=True)
-    # Validación de datos
-    numeric_cols = ['Inventario_actual_cajas', 'Ventas_totales_ultimos_meses', 'Periodo_dias', 'Lead_time_dias', 'Factor_seguridad', 'Pallet_size']
-    for col in numeric_cols:
-        df[col] = pd.to_numeric(df[col], errors='coerce')
-    st.success("✔️ Datos cargados")
-    st.dataframe(df, height=200)
-
-    # Paso 2: calcular sugerencia de orden
-    if st.button("2️⃣ Calcular Sugerencia de Orden"):
-        # Cálculo de demanda diaria y punto de reposición
-        df['ventasDiarias'] = df['Ventas_totales_ultimos_meses'] / df['Periodo_dias']
-        df['puntoReposicion'] = (
-            df['ventasDiarias'] * df['Lead_time_dias'] * df['Factor_seguridad']
-        ).round(0)
-        df['reordenar'] = df['Inventario_actual_cajas'] <= df['puntoReposicion']
-
-        # Sugerencia de orden con pallets variables
-        df['diferencia'] = df['puntoReposicion'] - df['Inventario_actual_cajas']
-        df['diferencia'] = df['diferencia'].clip(lower=0)
-        df['Orden_sugerida_cajas'] = df.apply(
-            lambda r: math.ceil(r['diferencia']/r['Pallet_size']) * r['Pallet_size'] if r['Pallet_size'] > 0 else 0,
-            axis=1
-        )
-
-        # Mostrar resultados
-        st.subheader("📈 Resultados de Sugerencia")
-        st.dataframe(
-            df[['Producto','ventasDiarias','puntoReposicion','reordenar','Pallet_size','Orden_sugerida_cajas']],
-            height=300
-        )
-
-        # Explicación breve
-        st.markdown("---")
-        st.write(
-            "**Cómo se calcula:**\n"
-            "1. ventasDiarias = Ventas_totales_ultimos_meses / Periodo_dias.\n"
-            "2. puntoReposicion = ventasDiarias × Lead_time_dias × Factor_seguridad.\n"
-            "3. reordenar = Inventario_actual_cajas ≤ puntoReposicion.\n"
-            "4. diferencia = max(puntoReposicion - Inventario_actual_cajas, 0).\n"
-            "5. Orden_sugerida_cajas = ceil(diferencia / Pallet_size) × Pallet_size."
-        )
-
-        # Botón para descargar resultados
-        csv = df.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="📥 Descargar Resultados",
-            data=csv,
-            file_name="sugerencia_orden.csv",
-            mime="text/csv"
-        )
