@@ -1,3 +1,4 @@
+```python
 import streamlit as st
 import pandas as pd
 import math
@@ -23,7 +24,7 @@ st.markdown(
 
 # Título y descripción
 st.title("🚀 ReorderPro: Calculadora de Punto de Reorden")
-st.write("Calcula cuándo y cuántas cajas pedir considerando inventario, demanda histórica, lead time y días de safety stock.")
+st.write("Calcula cuándo pedir de cada SKU considerando inventario, demanda histórica, lead time y días de safety stock.")
 
 # Ejemplo de archivo a subir
 st.subheader("📊 Ejemplo de archivo a subir (CSV o Excel)")
@@ -92,28 +93,24 @@ if uploaded:
     for col in ['Inventario_cajas', 'Ventas_cajas', 'Periodo_dias', 'Lead_time', 'Safety_days', 'Pallet_size']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    # Paso 2: calcular sugerencia de orden
+    # Paso 2: calcular punto de reposición y fecha de orden
     if st.button("2️⃣ Calcular Sugerencia de Orden"):
         df['ventasDiarias'] = (df['Ventas_cajas'] / df['Periodo_dias']).round(2)
         df['puntoReposicion'] = (df['ventasDiarias'] * (df['Lead_time'] + df['Safety_days'])).round(2)
         df['reordenar'] = df['Inventario_cajas'] <= df['puntoReposicion']
         df['reordenar'] = df['reordenar'].map({True: 'Ordenar', False: 'No ordenar'})
-        df['diferencia'] = (df['puntoReposicion'] - df['Inventario_cajas']).clip(lower=0)
-        df['Orden_cajas'] = df.apply(
-            lambda r: math.ceil(r['diferencia'] / r['Pallet_size']) * r['Pallet_size'] if r['Pallet_size']>0 else 0, axis=1
-        )
         def calc_order_date(row):
-            if row['ventasDiarias']>0:
+            if row['ventasDiarias'] > 0:
                 days_until = (row['Inventario_cajas'] - row['puntoReposicion']) / row['ventasDiarias']
-                days_until = math.floor(days_until) if days_until>0 else 0
+                days_until = math.floor(days_until) if days_until > 0 else 0
                 return (date.today() + timedelta(days=days_until)).strftime('%d/%m/%Y')
             return date.today().strftime('%d/%m/%Y')
         df['Fecha_para_orden'] = df.apply(calc_order_date, axis=1)
 
         # Mostrar resultados en tabla estilizada
         st.subheader("📈 Resultados de Sugerencia de Orden")
-        result = df[['SKU','ventasDiarias','puntoReposicion','reordenar','Fecha_para_orden','Orden_cajas']].copy()
-        result.columns = ['SKU','Ventas Diarias 🌟','Punto de Reposición 📦','¿Reordenar?','Fecha de Orden 🗓','Cajas a Ordenar 📋']
+        result = df[['SKU', 'ventasDiarias', 'puntoReposicion', 'reordenar', 'Fecha_para_orden']].copy()
+        result.columns = ['SKU', 'Ventas Diarias 🌟', 'Punto de Reposición 📦', '¿Reordenar?', 'Fecha de Orden 🗓']
         st.table(result)
 
         st.markdown("---")
@@ -122,12 +119,15 @@ if uploaded:
             "1) ventasDiarias = Ventas_cajas / Periodo_dias (2 decimales).  \n"
             "2) puntoReposicion = ventasDiarias × (Lead_time + Safety_days) (2 decimales).  \n"
             "3) reordenar = Inventario_cajas ≤ puntoReposicion.  \n"
-            "4) Orden_cajas = ceil(diferencia / Pallet_size) × Pallet_size.  \n"
-            "5) Fecha_para_orden = hoy + floor((Inventario_cajas - puntoReposicion)/ventasDiarias) días."
+            "4) Fecha_para_orden = hoy + floor((Inventario_cajas - puntoReposicion)/ventasDiarias) días."
         )
 
-        csv = result.to_csv(index=False).encode('utf-8')
+        # Descargar todo el df original con columnas nuevas
+        csv = df.to_csv(index=False).encode('utf-8')
         st.download_button(
-            label='📥 Descargar resultados (CSV)', data=csv,
-            file_name='sugerencia_orden.csv', mime='text/csv'
+            label='📥 Descargar archivo con análisis',
+            data=csv,
+            file_name='datos_con_analisis.csv',
+            mime='text/csv'
         )
+```
