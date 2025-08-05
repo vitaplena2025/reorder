@@ -21,9 +21,11 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# Título y descripción
 st.title("🚀 ReorderPro: Calculadora de Punto de Reorden")
 st.write("Calcula cuándo pedir de cada SKU, mostrando tu tabla original más las columnas de análisis al final.")
 
+# Ejemplo de archivo a subir
 st.subheader("📊 Ejemplo de archivo a subir (CSV o Excel)")
 example_df = pd.DataFrame({
     'SKU or Item Code': ['4387', '4417'],
@@ -31,12 +33,22 @@ example_df = pd.DataFrame({
     'Ventas (en cajas)': [2189, 1810],
     'Periodo de las ventas (en días)': [210, 210],
     'Lead Time (días)': [60, 60],
-    'Días de Safety Stock': [15, 15],
-    'Tamaño Paleta': [225, 225]
+    'Días de Safety Stock': [15, 15]
 })
 st.table(example_df)
+st.write(
+    "**Columnas necesarias:**\n"
+    "- SKU or Item Code: Código del producto.\n"
+    "- Inventario hoy: Stock actual en cajas.\n"
+    "- Ventas (en cajas): Total de ventas en el periodo.\n"
+    "- Periodo de las ventas (en días): Días del histórico de ventas.\n"
+    "- Lead Time (días): Plazo de entrega medio.\n"
+    "- Días de Safety Stock: Días de inventario adicional como buffer."
+)
+
 st.markdown("---")
 
+# Descarga de plantilla
 st.markdown("### 📥 Descarga tu plantilla de Excel antes de cargar datos")
 with open('template.xlsx', 'rb') as f:
     st.download_button(
@@ -64,8 +76,7 @@ if uploaded:
         'Ventas (en cajas)': 'Ventas_cajas',
         'Periodo de las ventas (en días)': 'Periodo_dias',
         'Lead Time (días)': 'Lead_time',
-        'Días de Safety Stock': 'Safety_days',
-        'Tamaño Paleta': 'Pallet_size'
+        'Días de Safety Stock': 'Safety_days'
     }
     missing = [c for c in expected if c not in df.columns]
     if missing:
@@ -74,10 +85,8 @@ if uploaded:
     df = df.rename(columns=expected)
 
     # Convertir numéricas
-    for col in ['Inventario_cajas','Ventas_cajas','Periodo_dias','Lead_time','Safety_days','Pallet_size']:
+    for col in ['Inventario_cajas','Ventas_cajas','Periodo_dias','Lead_time','Safety_days']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
-
-    st.success("Datos cargados, procede a calcular.")
 
     if st.button("2️⃣ Calcular Sugerencia de Orden"):
         # Cálculos
@@ -93,9 +102,7 @@ if uploaded:
             return date.today().strftime('%d/%m/%Y')
         df['Fecha_para_orden'] = df.apply(calc_date, axis=1)
 
-        # Unir análisis al final de la tabla original
-        analysis_cols = ['ventasDiarias','puntoReposicion','reordenar','Fecha_para_orden']
-        # renombrar para claridad
+        # Tabla original + análisis
         df_display = raw.copy()
         df_display['Ventas Diarias'] = df['ventasDiarias']
         df_display['Punto de Reposición'] = df['puntoReposicion']
@@ -106,10 +113,9 @@ if uploaded:
         st.table(df_display)
 
         # Descarga de archivo completo
-        csv = df_display.to_csv(index=False).encode('utf-8')
         st.download_button(
-            label='📥 Descargar tu archivo con análisis',
-            data=csv,
+            label='📥 Descargar archivo con análisis',
+            data=df_display.to_csv(index=False).encode('utf-8'),
             file_name='datos_con_analisis.csv',
             mime='text/csv'
         )
