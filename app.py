@@ -27,24 +27,24 @@ st.write("Esta herramienta calcula cuándo y cuántas cajas pedir considerando i
 # Ejemplo de archivo a subir
 st.subheader("📊 Ejemplo de archivo a subir (CSV o Excel)")
 example_df = pd.DataFrame({
-    'SKU or Item Code': ['4387', '4417'],
+    'SKU': ['4387', '4417'],
     'Inventario hoy': [892, 1174],
-    'Ventas (en cajas)': [2189, 1810],
-    'Periodo de las ventas (en días)': [210, 210],
+    'Ventas (cajas)': [2189, 1810],
+    'Periodo de data de ventas (días)': [210, 210],
     'Lead Time (días)': [60, 60],
-    'Días de Safety Stock': [15, 15],
+    'Días Safety Stock': [15, 15],
     'Tamaño Paleta': [225, 225]
 })
 st.table(example_df)
 
 st.write(
     "**Columnas necesarias:**\n"
-    "- SKU or Item Code: Código del producto.\n"
+    "- SKU: Código del producto.\n"
     "- Inventario hoy: Stock actual en cajas.\n"
-    "- Ventas (en cajas): Total de ventas en el periodo.\n"
-    "- Periodo de las ventas (en días): Días del histórico de ventas.\n"
+    "- Ventas (cajas): Total de ventas en el periodo.\n"
+    "- Periodo de data de ventas (días): Días cubiertos por el histórico de ventas.\n"
     "- Lead Time (días): Plazo de entrega medio.\n"
-    "- Días de Safety Stock: Días de inventario adicional como buffer.\n"
+    "- Días Safety Stock: Días de inventario adicional como buffer.\n"
     "- Tamaño Paleta: Cajas por pallet para redondeo."
 )
 
@@ -75,14 +75,14 @@ if uploaded:
     # Mostrar columnas detectadas
     st.write("### Columnas encontradas:", list(df.columns))
 
-    # Columnas esperadas y mapeo interno
+    # Columnas esperadas y renombrado map
     expected = {
-        'SKU or Item Code': 'SKU',
+        'SKU': 'SKU',
         'Inventario hoy': 'Inventario_cajas',
-        'Ventas (en cajas)': 'Ventas_cajas',
-        'Periodo de las ventas (en días)': 'Periodo_dias',
+        'Ventas (cajas)': 'Ventas_cajas',
+        'Periodo de data de ventas (días)': 'Periodo_dias',
         'Lead Time (días)': 'Lead_time',
-        'Días de Safety Stock': 'Safety_days',
+        'Días Safety Stock': 'Safety_days',
         'Tamaño Paleta': 'Pallet_size'
     }
     # Detectar faltantes
@@ -92,7 +92,7 @@ if uploaded:
         st.stop()
 
     # Renombrar columnas
-    df = df.rename(columns=expected)
+    df = df.rename(columns={k: v for k, v in expected.items()})
 
     # Asegurar columnas numéricas
     numeric_cols = ['Inventario_cajas', 'Ventas_cajas', 'Periodo_dias', 'Lead_time', 'Safety_days', 'Pallet_size']
@@ -106,7 +106,7 @@ if uploaded:
     if st.button("2️⃣ Calcular Sugerencia de Orden"):
         # Demanda diaria
         df['ventasDiarias'] = df['Ventas_cajas'] / df['Periodo_dias']
-        # Punto de reposición = demanda * (lead time + safety days)
+        # Punto de reposición con días de safety stock
         df['puntoReposicion'] = (df['ventasDiarias'] * (df['Lead_time'] + df['Safety_days'])).round(0)
         # Flag reordenar
         df['reordenar'] = df['Inventario_cajas'] <= df['puntoReposicion']
@@ -127,10 +127,10 @@ if uploaded:
         # Explicación resumida
         st.markdown("---")
         st.write(
-            "**Cómo se calcula:**  \n"
-            "1) ventasDiarias = Ventas_cajas / Periodo_dias.  \n"
-            "2) puntoReposicion = ventasDiarias × (Lead_time + Safety_days).  \n"
-            "3) reordenar = Inventario_cajas ≤ puntoReposicion.  \n"
+            "**Cómo se calcula:**  "
+            "1) ventasDiarias = Ventas_cajas / Periodo_dias.  "
+            "2) puntoReposicion = ventasDiarias × (Lead_time + Safety_days).  "
+            "3) reordenar = Inventario_cajas ≤ puntoReposicion.  "
             "4) Orden_cajas = ceil(diferencia / Pallet_size) × Pallet_size."
         )
 
