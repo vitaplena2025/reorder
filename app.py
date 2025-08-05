@@ -30,8 +30,8 @@ example_df = pd.DataFrame({
     'SKU': ['4387', '4417'],
     'Inventario hoy': [892, 1174],
     'Ventas (cajas)': [2189, 1810],
-    'Periodo días': [210, 210],
-    'Lead Time días': [60, 60],
+    'Periodo de data de ventas (días)': [210, 210],
+    'Lead Time (días)': [60, 60],
     'Días Safety Stock': [15, 15],
     'Tamaño Paleta': [225, 225]
 })
@@ -42,8 +42,8 @@ st.write(
     "- SKU: Código del producto.\n"
     "- Inventario hoy: Stock actual en cajas.\n"
     "- Ventas (cajas): Total de ventas en el periodo.\n"
-    "- Periodo días: Días del histórico de ventas.\n"
-    "- Lead Time días: Plazo de entrega medio.\n"
+    "- Periodo de data de ventas (días): Días cubiertos por el histórico de ventas.\n"
+    "- Lead Time (días): Plazo de entrega medio.\n"
     "- Días Safety Stock: Días de inventario adicional como buffer.\n"
     "- Tamaño Paleta: Cajas por pallet para redondeo."
 )
@@ -80,8 +80,8 @@ if uploaded:
         'SKU': 'SKU',
         'Inventario hoy': 'Inventario_cajas',
         'Ventas (cajas)': 'Ventas_cajas',
-        'Periodo días': 'Periodo_dias',
-        'Lead Time días': 'Lead_time',
+        'Periodo de data de ventas (días)': 'Periodo_dias',
+        'Lead Time (días)': 'Lead_time',
         'Días Safety Stock': 'Safety_days',
         'Tamaño Paleta': 'Pallet_size'
     }
