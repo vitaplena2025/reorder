@@ -37,7 +37,6 @@ example_df = pd.DataFrame({
     'Tamaño Paleta': [225, 225]
 })
 st.table(example_df)
-
 st.write(
     "**Columnas necesarias:**\n"
     "- SKU or Item Code: Código del producto.\n"
@@ -129,10 +128,18 @@ if uploaded:
                 return date.today().strftime('%d/%m/%Y')
         df['Fecha_para_orden'] = df.apply(calc_order_date, axis=1)
 
-        # Mostrar resultados
-        result_cols = ['SKU', 'ventasDiarias', 'puntoReposicion', 'reordenar', 'Orden_cajas', 'Fecha_para_orden']
+        # Mostrar resultados en tabla estilizada
         st.subheader("📈 Resultados de Sugerencia de Orden")
-        st.dataframe(df[result_cols], height=300)
+        result = df[['SKU', 'ventasDiarias', 'puntoReposicion', 'reordenar', 'Orden_cajas', 'Fecha_para_orden']].copy()
+        result.columns = [
+            'SKU',
+            'Ventas Diarias 🌟',
+            'Punto de Reposición 📦',
+            '¿Reordenar?',
+            'Cajas a Ordenar 📋',
+            'Fecha de Orden 🗓'
+        ]
+        st.table(result)
 
         # Explicación resumida
         st.markdown("---")
@@ -142,11 +149,11 @@ if uploaded:
             "2) puntoReposicion = ventasDiarias × (Lead_time + Safety_days).  \n"
             "3) reordenar = Inventario_cajas ≤ puntoReposicion.  \n"
             "4) Orden_cajas = ceil(diferencia / Pallet_size) × Pallet_size.  \n"
-            "5) Fecha_para_orden = hoy + floor((Inventario_cajas - puntoReposicion)/ventasDiarias) días, formato DD/MM/YYYY."
+            "5) Fecha_para_orden = hoy + floor((Inventario_cajas - puntoReposicion)/ventasDiarias) días."
         )
 
         # Botón de descarga de resultados
-        csv = df[result_cols].to_csv(index=False).encode('utf-8')
+        csv = result.to_csv(index=False).encode('utf-8')
         st.download_button(
             label='📥 Descargar resultados (CSV)',
             data=csv,
