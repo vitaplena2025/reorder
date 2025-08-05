@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import math
+from datetime import date, timedelta
 
 # Configuración de la página
 st.set_page_config(
@@ -22,29 +23,29 @@ st.markdown(
 
 # Título y descripción
 st.title("🚀 ReorderPro: Calculadora de Punto de Reorden")
-st.write("Esta herramienta calcula cuándo y cuántas cajas pedir considerando inventario, demanda histórica, lead time y días de safety stock.")
+st.write("Calcula cuándo y cuántas cajas pedir considerando inventario, demanda histórica, lead time y días de safety stock.")
 
 # Ejemplo de archivo a subir
 st.subheader("📊 Ejemplo de archivo a subir (CSV o Excel)")
 example_df = pd.DataFrame({
-    'SKU': ['4387', '4417'],
+    'SKU or Item Code': ['4387', '4417'],
     'Inventario hoy': [892, 1174],
-    'Ventas (cajas)': [2189, 1810],
-    'Periodo de data de ventas (días)': [210, 210],
+    'Ventas (en cajas)': [2189, 1810],
+    'Periodo de las ventas (en días)': [210, 210],
     'Lead Time (días)': [60, 60],
-    'Días Safety Stock': [15, 15],
+    'Días de Safety Stock': [15, 15],
     'Tamaño Paleta': [225, 225]
 })
 st.table(example_df)
 
 st.write(
     "**Columnas necesarias:**\n"
-    "- SKU: Código del producto.\n"
+    "- SKU or Item Code: Código del producto.\n"
     "- Inventario hoy: Stock actual en cajas.\n"
-    "- Ventas (cajas): Total de ventas en el periodo.\n"
-    "- Periodo de data de ventas (días): Días cubiertos por el histórico de ventas.\n"
+    "- Ventas (en cajas): Total de ventas en el periodo.\n"
+    "- Periodo de las ventas (en días): Días del histórico de ventas.\n"
     "- Lead Time (días): Plazo de entrega medio.\n"
-    "- Días Safety Stock: Días de inventario adicional como buffer.\n"
+    "- Días de Safety Stock: Días de inventario adicional como buffer.\n"
     "- Tamaño Paleta: Cajas por pallet para redondeo."
 )
 
@@ -75,14 +76,14 @@ if uploaded:
     # Mostrar columnas detectadas
     st.write("### Columnas encontradas:", list(df.columns))
 
-    # Columnas esperadas y renombrado map
+    # Columnas esperadas y mapeo interno
     expected = {
-        'SKU': 'SKU',
+        'SKU or Item Code': 'SKU',
         'Inventario hoy': 'Inventario_cajas',
-        'Ventas (cajas)': 'Ventas_cajas',
-        'Periodo de data de ventas (días)': 'Periodo_dias',
+        'Ventas (en cajas)': 'Ventas_cajas',
+        'Periodo de las ventas (en días)': 'Periodo_dias',
         'Lead Time (días)': 'Lead_time',
-        'Días Safety Stock': 'Safety_days',
+        'Días de Safety Stock': 'Safety_days',
         'Tamaño Paleta': 'Pallet_size'
     }
     # Detectar faltantes
@@ -92,7 +93,7 @@ if uploaded:
         st.stop()
 
     # Renombrar columnas
-    df = df.rename(columns={k: v for k, v in expected.items()})
+    df = df.rename(columns=expected)
 
     # Asegurar columnas numéricas
     numeric_cols = ['Inventario_cajas', 'Ventas_cajas', 'Periodo_dias', 'Lead_time', 'Safety_days', 'Pallet_size']
@@ -106,36 +107,46 @@ if uploaded:
     if st.button("2️⃣ Calcular Sugerencia de Orden"):
         # Demanda diaria
         df['ventasDiarias'] = df['Ventas_cajas'] / df['Periodo_dias']
-        # Punto de reposición con días de safety stock
+        # Punto de reposición = demanda * (lead time + safety days)
         df['puntoReposicion'] = (df['ventasDiarias'] * (df['Lead_time'] + df['Safety_days'])).round(0)
         # Flag reordenar
         df['reordenar'] = df['Inventario_cajas'] <= df['puntoReposicion']
-        # Diferencia y orden sugerida en cajas según pallet size
+        # Diferencia para ordenar
         df['diferencia'] = (df['puntoReposicion'] - df['Inventario_cajas']).clip(lower=0)
+        # Orden sugerida en cajas según pallet size
         df['Orden_cajas'] = df.apply(
             lambda r: math.ceil(r['diferencia'] / r['Pallet_size']) * r['Pallet_size'] if r['Pallet_size'] > 0 else 0,
             axis=1
         )
+        # Fecha para colocar orden
+        def calc_order_date(row):
+            if row['ventasDiarias'] > 0:
+                days_until = (row['Inventario_cajas'] - row['puntoReposicion']) / row['ventasDiarias']
+                days_until = math.floor(days_until) if days_until > 0 else 0
+                order_date = date.today() + timedelta(days=days_until)
+                return order_date.strftime('%d/%m/%Y')
+            else:
+                return date.today().strftime('%d/%m/%Y')
+        df['Fecha_para_orden'] = df.apply(calc_order_date, axis=1)
 
         # Mostrar resultados
+        result_cols = ['SKU', 'ventasDiarias', 'puntoReposicion', 'reordenar', 'Orden_cajas', 'Fecha_para_orden']
         st.subheader("📈 Resultados de Sugerencia de Orden")
-        st.dataframe(
-            df[['SKU', 'ventasDiarias', 'puntoReposicion', 'reordenar', 'Orden_cajas']],
-            height=300
-        )
+        st.dataframe(df[result_cols], height=300)
 
         # Explicación resumida
         st.markdown("---")
         st.write(
-            "**Cómo se calcula:**  "
-            "1) ventasDiarias = Ventas_cajas / Periodo_dias.  "
-            "2) puntoReposicion = ventasDiarias × (Lead_time + Safety_days).  "
-            "3) reordenar = Inventario_cajas ≤ puntoReposicion.  "
-            "4) Orden_cajas = ceil(diferencia / Pallet_size) × Pallet_size."
+            "**Cómo se calcula:**  \n"
+            "1) ventasDiarias = Ventas_cajas / Periodo_dias.  \n"
+            "2) puntoReposicion = ventasDiarias × (Lead_time + Safety_days).  \n"
+            "3) reordenar = Inventario_cajas ≤ puntoReposicion.  \n"
+            "4) Orden_cajas = ceil(diferencia / Pallet_size) × Pallet_size.  \n"
+            "5) Fecha_para_orden = hoy + floor((Inventario_cajas - puntoReposicion)/ventasDiarias) días, formato DD/MM/YYYY."
         )
 
         # Botón de descarga de resultados
-        csv = df.to_csv(index=False).encode('utf-8')
+        csv = df[result_cols].to_csv(index=False).encode('utf-8')
         st.download_button(
             label='📥 Descargar resultados (CSV)',
             data=csv,
