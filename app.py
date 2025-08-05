@@ -72,8 +72,11 @@ if uploaded:
     else:
         df = pd.read_csv(uploaded)
 
-    # Renombrar columnas para cálculo interno
-    rename_map = {
+    # Mostrar columnas detectadas
+    st.write("### Columnas encontradas:", list(df.columns))
+
+    # Columnas esperadas y renombrado map
+    expected = {
         'SKU': 'SKU',
         'Inventario hoy': 'Inventario_cajas',
         'Ventas (cajas)': 'Ventas_cajas',
@@ -82,18 +85,25 @@ if uploaded:
         'Días Safety Stock': 'Safety_days',
         'Tamaño Paleta': 'Pallet_size'
     }
-    df = df.rename(columns=rename_map)
+    # Detectar faltantes
+    missing = [col for col in expected if col not in df.columns]
+    if missing:
+        st.error(f"❌ Faltan estas columnas en tu archivo: {missing}")
+        st.stop()
+
+    # Renombrar columnas
+    df = df.rename(columns={k: v for k, v in expected.items()})
 
     # Asegurar columnas numéricas
     numeric_cols = ['Inventario_cajas', 'Ventas_cajas', 'Periodo_dias', 'Lead_time', 'Safety_days', 'Pallet_size']
     for col in numeric_cols:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    st.success("✔️ Datos cargados")
+    st.success("✔️ Datos cargados correctamente")
     st.dataframe(df, height=200)
 
     # Paso 2: calcular sugerencia de orden
-    if st.button("2️⃣ Calcular Sugerencia"):
+    if st.button("2️⃣ Calcular Sugerencia de Orden"):
         # Demanda diaria
         df['ventasDiarias'] = df['Ventas_cajas'] / df['Periodo_dias']
         # Punto de reposición con días de safety stock
