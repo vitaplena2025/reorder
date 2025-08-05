@@ -45,16 +45,6 @@ example_df = pd.DataFrame({
 })
 st.table(example_df)
 
-# Botón para descargar template
-with open('template.xlsx', 'rb') as f:
-    data = f.read()
-st.download_button(
-    label='📥 Descargar plantilla de Excel',
-    data=data,
-    file_name='plantilla_reorder.xlsx',
-    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-)
-
 st.markdown(
     """
 **Columnas del CSV:**
@@ -66,6 +56,17 @@ st.markdown(
 - **Safety Stock**: Coeficiente >1 para margen de seguridad.
 - **Mínimo Paleta**: Paletas mínimas totales (1 paleta = 225 cajas).
     """
+)
+
+# Botón destacado para descargar template
+st.markdown("### 📥 Descarga la plantilla de Excel aquí antes de comenzar:")
+with open('template.xlsx', 'rb') as f:
+    data = f.read()
+st.download_button(
+    label='Descargar plantilla de Excel (Excel Template)',
+    data=data,
+    file_name='plantilla_reorder.xlsx',
+    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 )
 
 st.markdown("---")
@@ -87,7 +88,7 @@ uploaded_file = st.file_uploader("Selecciona tu CSV", type="csv")
 
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
-    # Renombrar columnas a internos para cálculo
+    # Renombrar columnas para cálculo interno
     rename_map = {
         'SKU or Item Code': 'Producto',
         'Inventario hoy': 'Inventario_actual_cajas',
@@ -158,7 +159,7 @@ if uploaded_file:
             "cajasOrdenar = paletas × 225."
         )
 
-        # Botón para descargar
+        # Botón para descargar resultados
         csv = df.to_csv(index=False).encode("utf-8")
         st.download_button(
             label="📥 Descargar CSV Sugerido",
