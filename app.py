@@ -1,4 +1,3 @@
-```python
 import streamlit as st
 import pandas as pd
 import math
@@ -130,4 +129,3 @@ if uploaded:
             file_name='datos_con_analisis.csv',
             mime='text/csv'
         )
-```
