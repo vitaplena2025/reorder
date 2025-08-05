@@ -88,7 +88,7 @@ if uploaded:
     for col in ['Inventario_cajas','Ventas_cajas','Periodo_dias','Lead_time','Safety_days']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    if st.button("2️⃣ Calcular Sugerencia de Orden"):
+    if st.button("🔍 Analizar Data"):
         # Cálculos
         df['ventasDiarias'] = (df['Ventas_cajas']/df['Periodo_dias']).round(2)
         df['puntoReposicion'] = (df['ventasDiarias']*(df['Lead_time']+df['Safety_days'])).round(2)
@@ -112,7 +112,6 @@ if uploaded:
         st.subheader("📈 Tu tabla original con análisis agregado")
         st.table(df_display)
 
-        # Descarga de archivo completo
         st.download_button(
             label='📥 Descargar archivo con análisis',
             data=df_display.to_csv(index=False).encode('utf-8'),
