@@ -45,6 +45,16 @@ example_df = pd.DataFrame({
 })
 st.table(example_df)
 
+# Botón para descargar template
+with open('template.xlsx', 'rb') as f:
+    data = f.read()
+st.download_button(
+    label='📥 Descargar plantilla de Excel',
+    data=data,
+    file_name='plantilla_reorder.xlsx',
+    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+)
+
 st.markdown(
     """
 **Columnas del CSV:**
