@@ -94,18 +94,14 @@ if uploaded:
 
     # Paso 2: calcular sugerencia de orden
     if st.button("2️⃣ Calcular Sugerencia de Orden"):
-        # Demanda diaria
-        df['ventasDiarias'] = df['Ventas_cajas'] / df['Periodo_dias']
-        # Punto de reposición = demanda * (lead time + safety days)
-        df['puntoReposicion'] = (df['ventasDiarias'] * (df['Lead_time'] + df['Safety_days'])).round(0)
-        # Reemplazar booleanos por texto
+        df['ventasDiarias'] = (df['Ventas_cajas'] / df['Periodo_dias']).round(2)
+        df['puntoReposicion'] = (df['ventasDiarias'] * (df['Lead_time'] + df['Safety_days'])).round(2)
         df['reordenar'] = df['Inventario_cajas'] <= df['puntoReposicion']
         df['reordenar'] = df['reordenar'].map({True: 'Ordenar', False: 'No ordenar'})
-        # Diferencia para ordenar
         df['diferencia'] = (df['puntoReposicion'] - df['Inventario_cajas']).clip(lower=0)
-        # Orden sugerida en cajas según pallet size
-        df['Orden_cajas'] = df.apply(lambda r: math.ceil(r['diferencia'] / r['Pallet_size']) * r['Pallet_size'] if r['Pallet_size']>0 else 0, axis=1)
-        # Fecha de orden
+        df['Orden_cajas'] = df.apply(
+            lambda r: math.ceil(r['diferencia'] / r['Pallet_size']) * r['Pallet_size'] if r['Pallet_size']>0 else 0, axis=1
+        )
         def calc_order_date(row):
             if row['ventasDiarias']>0:
                 days_until = (row['Inventario_cajas'] - row['puntoReposicion']) / row['ventasDiarias']
@@ -116,21 +112,20 @@ if uploaded:
 
         # Mostrar resultados en tabla estilizada
         st.subheader("📈 Resultados de Sugerencia de Orden")
-        result = df[['SKU', 'ventasDiarias', 'puntoReposicion', 'reordenar', 'Fecha_para_orden', 'Orden_cajas']].copy()
-        result.columns = ['SKU', 'Ventas Diarias 🌟', 'Punto de Reposición 📦', '¿Reordenar?', 'Fecha de Orden 🗓', 'Cajas a Ordenar 📋']
+        result = df[['SKU','ventasDiarias','puntoReposicion','reordenar','Fecha_para_orden','Orden_cajas']].copy()
+        result.columns = ['SKU','Ventas Diarias 🌟','Punto de Reposición 📦','¿Reordenar?','Fecha de Orden 🗓','Cajas a Ordenar 📋']
         st.table(result)
 
         st.markdown("---")
         st.write(
             "**Cómo se calcula:**  \n"
-            "1) ventasDiarias = Ventas_cajas / Periodo_dias.  \n"
-            "2) puntoReposicion = ventasDiarias × (Lead_time + Safety_days).  \n"
-            "3) reordenar = Inventario_cajas ≤ puntoReposicion (Ordenar o No ordenar).  \n"
+            "1) ventasDiarias = Ventas_cajas / Periodo_dias (2 decimales).  \n"
+            "2) puntoReposicion = ventasDiarias × (Lead_time + Safety_days) (2 decimales).  \n"
+            "3) reordenar = Inventario_cajas ≤ puntoReposicion.  \n"
             "4) Orden_cajas = ceil(diferencia / Pallet_size) × Pallet_size.  \n"
             "5) Fecha_para_orden = hoy + floor((Inventario_cajas - puntoReposicion)/ventasDiarias) días."
         )
 
-        # Botón de descarga de resultados
         csv = result.to_csv(index=False).encode('utf-8')
         st.download_button(
             label='📥 Descargar resultados (CSV)', data=csv,
